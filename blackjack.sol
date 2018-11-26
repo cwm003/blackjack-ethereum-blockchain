@@ -3,14 +3,14 @@ contract blackjack {
 
     address public owner;
     address[] private players;
-    uint private card;
+    uint8 private card;
     uint private rand;
     uint[] private player1cards;
     uint[] private player2cards;
-    uint[] private player1cardsValue;
-    uint[] private player2cardsValue;
-    uint private player1sum = 0;
-    uint private player2sum = 0;
+    uint8 private player1sum = 0;
+    uint8 private player2sum = 0;
+    bool private player1ace = false;
+    bool private player2ace = false;
     bool private player1stand = false;
     bool private player2stand = false;
     
@@ -26,17 +26,8 @@ contract blackjack {
             players.push(msg.sender);
             //card1
             player1draw();
-            
             //card2
             player1draw();
-            
-            //checkACE
-            if(player1cardsValue[0] == 1 && player1cardsValue[1] == 10){
-                player1cardsValue[0] == 11;
-            }
-            else if(player1cardsValue[0] == 10 && player1cardsValue[1] == 1){
-                player1cardsValue[1] == 11;
-            }
         }
         
         //player2
@@ -44,40 +35,33 @@ contract blackjack {
             players.push(msg.sender);
             //card1
             player2draw();
-            
             //card2
             player2draw();
-            
-            //checkACE
-            if(player2cardsValue[0] == 1 && player2cardsValue[1] == 10){
-                player2cardsValue[0] == 11;
-            }
-            else if(player2cardsValue[0] == 10 && player2cardsValue[1] == 1){
-                player2cardsValue[1] == 11;
-            }
         }
     }
     
     function player1draw() private{
-        card = ( random() % 13 ) + 1;
+        card = uint8(( random() % 13 ) + 1);
         player1cards.push(card);
         if(card >= 10){
-            player1cardsValue.push(10);
             player1sum += 10;
+        }else if(card == 1 && player1sum <= 10){
+            player1sum += 11;
+            player1ace = true;
         }else{
-            player1cardsValue.push(card);
             player1sum += card;
         }
     }
     
     function player2draw() private{
-        card = ( random() % 13 ) + 1;
+        card = uint8(( random() % 13 ) + 1);
         player2cards.push(card);
         if(card >= 10){
-            player2cardsValue.push(10);
             player2sum += 10;
+        }else if(card == 1 && player2sum <= 10){
+            player2sum += 11;
+            player2ace = true;
         }else{
-            player2cardsValue.push(card);
             player2sum += card;
         }
     }
@@ -85,18 +69,27 @@ contract blackjack {
     function hit() public{
         if(msg.sender == players[0] && player1stand == false){
             player1draw();
-            if(player1sum >= 21){
+            if(player1sum >= 21 && player1ace == false){
+                player1sum = 0;
                 player1stand = true;
+            }
+            else if(player1sum >= 21 && player1ace == true){
+                player1sum -= 10;
+                player1ace == false;
             }
         }else if(msg.sender == players[1] && player2stand == false){
             player2draw();
-            if(player2sum >= 21){
+            if(player2sum >= 21 && player2ace == false){
+                player2sum = 0;
                 player2stand = true;
+            }
+            else if(player2sum >= 21 && player2ace == true){
+                player2sum -= 10;
+                player2ace = false;
             }
         }if(player1stand == true && player2stand == true){
             findWinner();
         }
-        
     }
     
     function stand() public{
@@ -110,27 +103,29 @@ contract blackjack {
     }
     
     function findWinner() private{
-        if(player1sum > player2sum && player1sum <= 21){
-            players[0].transfer(this.balance);
-        }else if(player2sum > player1sum && player2sum <= 21){
-            players[1].transfer(this.balance);
+        if(player1sum > player2sum){
+            owner.transfer(address(this).balance/20);
+            players[0].transfer(address(this).balance);
+        }else if(player2sum > player1sum){
+            owner.transfer(address(this).balance/20);
+            players[1].transfer(address(this).balance);
         }else{
-            players[0].transfer(this.balance/3);
-            players[1].transfer(this.balance/3);
-            owner.transfer(this.balance/3);
+            owner.transfer(address(this).balance/20);
+            players[0].transfer(address(this).balance/2);
+            players[1].transfer(address(this).balance);
         }end();
     }
     
-    function end()private{
+    function end() private{
         delete players;
         delete player1cards;
         delete player2cards;
-        delete player1cardsValue;
-        delete player2cardsValue;
         player1sum = 0;
         player2sum = 0;
         player1stand = false;
         player2stand = false;
+        player1ace = false;
+        player2ace = false;
     }
     function random() private view returns (uint){
         rand += uint(keccak256(block.difficulty,now,players,players.length));
@@ -141,16 +136,16 @@ contract blackjack {
         return player1cards;
     }
     
-    function getPlayer1cardValue()public view returns(uint[]){
-        return player1cardsValue;
+    function getPlayer1Value()public view returns(uint){
+        return player1sum;
     }
     
     function getPlayer2card()public view returns(uint[]){
         return player2cards;
     }
     
-    function getPlayer2cardValue()public view returns(uint[]){
-        return player2cardsValue;
+    function getPlayer2Value()public view returns(uint){
+        return player2sum;
     }
     
     function getPlayers()public view returns(address[]){
