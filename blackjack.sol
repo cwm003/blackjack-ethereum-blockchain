@@ -4,9 +4,12 @@ contract blackjack {
     address public owner;
     address[] private players;
     uint8 private card;
+    uint8 private suit;
     uint private rand;
-    uint[] private player1cards;
-    uint[] private player2cards;
+    uint8[] private player1cards;
+    uint8[] private player2cards;
+    uint8[] private player1cards_suit;
+    uint8[] private player2cards_suit;
     uint8 private player1sum = 0;
     uint8 private player2sum = 0;
     bool private player1ace = false;
@@ -42,7 +45,9 @@ contract blackjack {
     
     function player1draw() private{
         card = uint8(( random() % 13 ) + 1);
+        suit = uint8(randomSuit() % 4);
         player1cards.push(card);
+        player1cards_suit.push(suit);
         if(card >= 10){
             player1sum += 10;
         }else if(card == 1 && player1sum <= 10){
@@ -55,6 +60,8 @@ contract blackjack {
     
     function player2draw() private{
         card = uint8(( random() % 13 ) + 1);
+        suit = uint8(randomSuit() % 4);
+        player2cards_suit.push(suit);
         player2cards.push(card);
         if(card >= 10){
             player2sum += 10;
@@ -127,12 +134,18 @@ contract blackjack {
         player1ace = false;
         player2ace = false;
     }
+    
     function random() private view returns (uint){
         rand += uint(keccak256(block.difficulty,now,players,players.length));
         return uint(keccak256(block.difficulty,now,players,players.length,rand));
     }
     
-    function getPlayer1card()public view returns(uint[]){
+    function randomSuit() private view returns (uint){
+        rand += uint(keccak256(block.difficulty,now,players,players.length));
+        return uint(keccak256(rand,players.length,players,now,block.difficulty));
+    }
+    
+    function getPlayer1card()public view returns(uint8[]){
         return player1cards;
     }
     
@@ -140,7 +153,11 @@ contract blackjack {
         return player1sum;
     }
     
-    function getPlayer2card()public view returns(uint[]){
+    function getPlayers1cardSuit()public view returns(uint8[]){
+        return player1cards_suit;
+    }
+    
+    function getPlayer2card()public view returns(uint8[]){
         return player2cards;
     }
     
@@ -148,7 +165,12 @@ contract blackjack {
         return player2sum;
     }
     
+    function getPlayers2cardSuit()public view returns(uint8[]){
+        return player2cards_suit;
+    }
+    
     function getPlayers()public view returns(address[]){
         return players;
     }
+    
 }
