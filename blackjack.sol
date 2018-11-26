@@ -2,7 +2,7 @@ pragma solidity ^0.4.25;
 contract blackjack {
 
     address public owner;
-    address[] private players;
+    address[2] private players;
     uint8 private card;
     uint8 private suit;
     uint private rand;
@@ -25,8 +25,8 @@ contract blackjack {
         require(msg.value == 1 ether && players.length <= 2);
         
         //player1
-        if(players.length == 0){
-            players.push(msg.sender);
+        if(players[0] == 0){
+            players[0] = msg.sender;
             //card1
             player1draw();
             //card2
@@ -34,8 +34,8 @@ contract blackjack {
         }
         
         //player2
-        if(players.length == 1 && msg.sender != players[0]){
-            players.push(msg.sender);
+        if(players[1] == 0 && msg.sender != players[0]){
+            players[1] = msg.sender;
             //card1
             player2draw();
             //card2
@@ -169,7 +169,7 @@ contract blackjack {
         return player2cards_suit;
     }
     
-    function getPlayers()public view returns(address[]){
+    function getPlayers()public view returns(address[2]){
         return players;
     }
     
