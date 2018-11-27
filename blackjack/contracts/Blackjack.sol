@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
-contract blackjack {
+contract Blackjack {
 
-    address public owner;
+    address private owner;
     address[2] private players;
     uint8 private card;
     uint8 private suit;
@@ -21,8 +21,8 @@ contract blackjack {
         owner = msg.sender;
     }
     
-    function enter() public payable{
-        require(msg.value == 1 ether && players.length <= 2);
+    function enter() public payable returns(uint8[]){
+        require(msg.value == 1 ether && players.length <= 2 && msg.sender != players[0] && msg.sender != players[1]);
         
         //player1
         if(players[0] == 0){
@@ -31,6 +31,8 @@ contract blackjack {
             player1draw();
             //card2
             player1draw();
+
+            return player1cards;
         }
         
         //player2
@@ -145,32 +147,39 @@ contract blackjack {
         return uint(keccak256(rand,players.length,players,now,block.difficulty));
     }
     
-    function getPlayer1card()public view returns(uint8[]){
-        return player1cards;
+    function getPlayerCard()public view returns(uint8[]){
+        if(msg.sender == players[0]){
+            return player1cards;
+        }
+        else if(msg.sender == players[1]){
+            return player2cards;
+        }
     }
-    
-    function getPlayer1Value()public view returns(uint){
-        return player1sum;
-    }
-    
-    function getPlayers1cardSuit()public view returns(uint8[]){
-        return player1cards_suit;
-    }
-    
-    function getPlayer2card()public view returns(uint8[]){
-        return player2cards;
-    }
-    
-    function getPlayer2Value()public view returns(uint){
-        return player2sum;
-    }
-    
-    function getPlayers2cardSuit()public view returns(uint8[]){
-        return player2cards_suit;
-    }
+
+    function getPlayerSum()public view returns(uint8){
+        if(msg.sender == players[0]){
+            return player1sum;
+        }
+        else if(msg.sender == players[1]){
+            return player2sum;
+        }
+    } 
+
+    function getPlayersCardSuit()public view returns(uint8[]){
+        if(msg.sender == players[0]){
+            return player1cards_suit;
+        }
+        else if(msg.sender == players[1]){
+            return player2cards_suit;
+        }
+    }    
     
     function getPlayers()public view returns(address[2]){
         return players;
+    }
+
+    function getOwner()public view returns(address){
+        return owner;
     }
     
 }

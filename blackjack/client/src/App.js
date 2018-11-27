@@ -62,27 +62,31 @@ class App extends Component {
   checkPlayer(){
     const { contract } = this.state;
     const players = contract.getPlayers();
-    console.log(players.map);
+    console.log(players);
   }
 
   showCard(){
     const { contract } = this.state;
-    const card = contract.getPlayer1card();
+    const card = contract.getPlayerCard().then(result => {
+      console.log(result[0].words[0]);
+    });  
     // const suit = contract.getPlayers1cardSuit();
     // for (var i = 0; i < 3; i++) {
     //   console.log(card[i]);
     //   console.log("show");
     // } 
-    console.log(card);
+    // console.log(card);
     // console.log(test);
-    console.log("showwewq");
+    // console.log("showwewq");
     // console.log(suit);
   }
 
   getSum(){
-    const { contract } = this.state;
-    const sum = contract.getPlayer1Value();
-    console.log(sum);
+    const { contract,address } = this.state;
+    const sum = contract.getPlayer1Value().then(result => {
+      console.log(result.words[0]);
+    });
+    
   }
 
   render() {
@@ -93,19 +97,12 @@ class App extends Component {
       <div className="App">
         <h1>Blackjack</h1>
         <button onClick={()=>this.enter()}>Play! 1 ETH</button>
+        
         <button onClick={()=>this.checkPlayer()}>check Player</button>
+        <br></br>
         <button onClick={()=>this.showCard()}>show cards</button>
+        
         <button onClick={()=>this.getSum()}>get sum</button>
-        <p>Your Truffle Box is installed and ready.</p>
-        <h2>Smart Contract Example</h2>
-        <p>
-          If your contracts compiled and migrated successfully, below will show
-          a stored value of 5 (by default).
-        </p>
-        <p>
-          Try changing the value stored on <strong>line 40</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div>
       </div>
     );
   }
