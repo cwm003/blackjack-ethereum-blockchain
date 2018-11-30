@@ -1,8 +1,9 @@
-pragma solidity ^0.4.25;
-contract blackjack {
+pragma solidity ^0.4.24;
+contract Blackjack {
 
-    address public owner;
+    address private owner;
     address[2] private players;
+    address[2] private lastPlayers;
     uint8 private card;
     uint8 private suit;
     uint private rand;
@@ -16,30 +17,51 @@ contract blackjack {
     bool private player2ace = false;
     bool private player1stand = false;
     bool private player2stand = false;
+    bool private endGame = false;
+    uint8 whoWin = 0;
     
     constructor() public{
         owner = msg.sender;
     }
     
-    function enter() public payable{
-        require(msg.value == 1 ether && players.length <= 2);
+    function enter() public payable returns(uint8[]){
+        require(msg.value == 1 ether && msg.sender != players[0] && msg.sender != players[1]);
         
+        if(endGame == true){
+            delete lastPlayers;
+            endGame = false;
+            whoWin = 0;
+        }
         //player1
         if(players[0] == 0){
             players[0] = msg.sender;
+            delete player1cards;
             //card1
             player1draw();
             //card2
             player1draw();
+
+            if(player1sum == 21){
+                player1stand = true;
+            }
+
+            return player1cards;
         }
         
         //player2
         if(players[1] == 0 && msg.sender != players[0]){
             players[1] = msg.sender;
+            delete player2cards;
             //card1
             player2draw();
             //card2
             player2draw();
+
+            if(player1sum == 21){
+                player2stand = true;
+            }
+
+            return player2cards;
         }
     }
     
@@ -62,7 +84,7 @@ contract blackjack {
         card = uint8(( random() % 13 ) + 1);
         suit = uint8(randomSuit() % 4);
         player2cards_suit.push(suit);
-        player2cards.push(card);
+        player2cards.push(card);    
         if(card >= 10){
             player2sum += 10;
         }else if(card == 1 && player2sum <= 10){
@@ -74,23 +96,23 @@ contract blackjack {
     }
     
     function hit() public{
-        if(msg.sender == players[0] && player1stand == false){
+        if(msg.sender == players[0] && player1stand == false && endGame == false){
             player1draw();
-            if(player1sum >= 21 && player1ace == false){
+            if(player1sum > 21 && player1ace == false){
                 player1sum = 0;
                 player1stand = true;
             }
-            else if(player1sum >= 21 && player1ace == true){
+            else if(player1sum > 21 && player1ace == true){
                 player1sum -= 10;
                 player1ace == false;
             }
-        }else if(msg.sender == players[1] && player2stand == false){
+        }else if(msg.sender == players[1] && player2stand == false && endGame == false){
             player2draw();
-            if(player2sum >= 21 && player2ace == false){
+            if(player2sum > 21 && player2ace == false){
                 player2sum = 0;
                 player2stand = true;
             }
-            else if(player2sum >= 21 && player2ace == true){
+            else if(player2sum > 21 && player2ace == true){
                 player2sum -= 10;
                 player2ace = false;
             }
@@ -113,26 +135,29 @@ contract blackjack {
         if(player1sum > player2sum){
             owner.transfer(address(this).balance/20);
             players[0].transfer(address(this).balance);
+            whoWin = 1;
         }else if(player2sum > player1sum){
             owner.transfer(address(this).balance/20);
             players[1].transfer(address(this).balance);
+            whoWin = 2;
         }else{
             owner.transfer(address(this).balance/20);
             players[0].transfer(address(this).balance/2);
             players[1].transfer(address(this).balance);
+            whoWin = 3;
         }end();
     }
     
     function end() private{
+        lastPlayers = players;
         delete players;
-        delete player1cards;
-        delete player2cards;
         player1sum = 0;
         player2sum = 0;
         player1stand = false;
         player2stand = false;
         player1ace = false;
         player2ace = false;
+        endGame = true;
     }
     
     function random() private view returns (uint){
@@ -145,32 +170,51 @@ contract blackjack {
         return uint(keccak256(rand,players.length,players,now,block.difficulty));
     }
     
-    function getPlayer1card()public view returns(uint8[]){
-        return player1cards;
+    function getPlayerCard()public view returns(uint8[]){
+        if(msg.sender == players[0] || msg.sender == lastPlayers[0]){
+            return player1cards;
+        }
+        else if(msg.sender == players[1] || msg.sender == lastPlayers[1]){
+            return player2cards;
+        }
     }
-    
-    function getPlayer1Value()public view returns(uint){
-        return player1sum;
-    }
-    
-    function getPlayers1cardSuit()public view returns(uint8[]){
-        return player1cards_suit;
-    }
-    
-    function getPlayer2card()public view returns(uint8[]){
-        return player2cards;
-    }
-    
-    function getPlayer2Value()public view returns(uint){
-        return player2sum;
-    }
-    
-    function getPlayers2cardSuit()public view returns(uint8[]){
-        return player2cards_suit;
-    }
+
+    function getPlayerSum()public view returns(uint8){
+        if(msg.sender == players[0]){
+            return player1sum;
+        }
+        else if(msg.sender == players[1]){
+            return player2sum;
+        }
+    } 
+
+    function getPlayersCardSuit()public view returns(uint8[]){
+        if(msg.sender == players[0] || msg.sender == lastPlayers[0]){
+            return player1cards_suit;
+        }
+        else if(msg.sender == players[1]|| msg.sender == lastPlayers[1]){
+            return player2cards_suit;
+        }
+    }    
     
     function getPlayers()public view returns(address[2]){
         return players;
+    }
+
+    function getOwner()public view returns(address){
+        return owner;
+    }
+
+    function getWhoWin()public view returns(uint8){
+        uint8 state = whoWin;
+        if(msg.sender == players[0] || msg.sender == lastPlayers[0]){
+            return state;
+        }
+        else if(msg.sender == players[1] || msg.sender == lastPlayers[1]){
+            if(whoWin == 1){state = 2;}
+            else if(whoWin == 2){state = 1;}
+            return state;
+        }
     }
     
 }
